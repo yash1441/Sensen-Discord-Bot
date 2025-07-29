@@ -38,7 +38,9 @@ module.exports = {
 		const username = interaction.user.username;
 
 		const now = new Date();
-		const currentDate = now.toISOString().split("T")[0];
+		const currentDate = now.toLocaleDateString("sv-SE", {
+			timeZone: "Asia/Tokyo", // UTC+9
+		});
 
 		const interactionReply = isNewUser(userId)
 			? await createCheckin(userId, username, currentDate)
