@@ -76,7 +76,7 @@ async function createCheckin(userId, username, currentDate) {
 		.setTitle("ログインキャンペーン")
 		.setDescription(`✅ ${username} さん、チェックイン成功しました！`)
 		.addFields({
-			name: "累計チェックイン日数",
+			name: "累計ログイン日数",
 			value: `${inlineCode(streak.toString())} 日`,
 		})
 		.setTimestamp();
@@ -157,7 +157,7 @@ async function updateCheckin(userId, currentDate) {
 		);
 		embed.addFields(
 			{
-				name: "累計チェックイン日数",
+				name: "累計ログイン日数",
 				value: `${inlineCode(row.streak.toString())} 日`,
 			},
 			{
@@ -191,7 +191,7 @@ async function updateCheckin(userId, currentDate) {
 		);
 		embed.addFields(
 			{
-				name: "累計チェックイン日数",
+				name: "累計ログイン日数",
 				value: `${inlineCode(newStreak.toString())} 日`,
 			},
 			{
@@ -210,7 +210,7 @@ async function updateCheckin(userId, currentDate) {
 	// If streak continues
 	embed.setDescription(`✅ ${row.username} さん、チェックイン成功しました！`);
 	embed.addFields({
-		name: "累計チェックイン日数",
+		name: "累計ログイン日数",
 		value: `${inlineCode(newStreak.toString())} 日`,
 	});
 
