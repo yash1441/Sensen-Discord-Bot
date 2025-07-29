@@ -185,6 +185,13 @@ async function updateCheckin(userId, currentDate) {
 	);
 
 	if (isReset) {
+		// Update max_streak to previous streak if it's higher
+		if (row.streak > row.max_streak) {
+			db.prepare(`UPDATE checkins SET max_streak = ? WHERE user_id = ?`).run(
+				row.streak,
+				userId
+			);
+		}
 		updateCheckin.run(newStreak, currentDate, JSON.stringify(rewards), userId);
 		embed.setDescription(
 			`🔄 ${row.username} さん、5日間チェックインがされていなかったため、累計チェックイン数は「1」にリセットされました。`
