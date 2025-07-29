@@ -71,11 +71,11 @@ async function createCheckin(userId, username, currentDate) {
 
 	const embed = new EmbedBuilder()
 		.setColor(process.env.EMBED_COLOR)
-		.setTitle("日常簽到")
-		.setDescription(`✅ ${username}，你已成功簽到！`)
+		.setTitle("ログインキャンペーン")
+		.setDescription(`✅ ${username} さん、チェックイン成功しました！`)
 		.addFields({
-			name: "當前累計簽到天數",
-			value: `${inlineCode(streak.toString())} 天`,
+			name: "累計チェックイン日数",
+			value: `${inlineCode(streak.toString())} 日`,
 		})
 		.setTimestamp();
 
@@ -100,17 +100,17 @@ async function createCheckin(userId, username, currentDate) {
 
 		if (!success)
 			return {
-				content: `❌ 無法為 ${username} 更新獎勵。請稍後再試。`,
+				content: `❌ ${username} さんの報酬を更新できませんでした。しばらくしてからもう一度お試しください。`,
 			};
 
 		embed.addFields({
-			name: "獎勵",
-			value: codeBlock(rewards.join(", ") || "尚未獲得任何獎勵。"),
+			name: "報酬",
+			value: codeBlock(rewards.join(", ") || "まだ報酬は獲得されていません。"),
 		});
 	} else {
 		embed.addFields({
-			name: "獎勵",
-			value: codeBlock("尚未獲得任何獎勵。"),
+			name: "報酬",
+			value: codeBlock("まだ報酬は獲得されていません。"),
 		});
 	}
 
@@ -129,7 +129,7 @@ async function createCheckin(userId, username, currentDate) {
 async function updateCheckin(userId, currentDate) {
 	const embed = new EmbedBuilder()
 		.setColor(process.env.EMBED_COLOR)
-		.setTitle("日常簽到")
+		.setTitle("ログインキャンペーン")
 		.setTimestamp();
 
 	const row = db
@@ -150,16 +150,18 @@ async function updateCheckin(userId, currentDate) {
 	}
 
 	if (lastDate === currentDate) {
-		embed.setDescription(`⏳ ${row.username}，您已完成今日簽到。請明日再試。`);
+		embed.setDescription(
+			`⏳ ${row.username} さん、本日はすでにチェックイン済みです。明日またお試しください。`
+		);
 		embed.addFields(
 			{
-				name: "當前累計簽到天數",
-				value: `${inlineCode(row.streak.toString())} 天`,
+				name: "累計チェックイン日数",
+				value: `${inlineCode(row.streak.toString())} 日`,
 			},
 			{
-				name: "獎勵",
+				name: "報酬",
 				value: codeBlock(
-					rewards.length ? rewards.join(", ") : "尚未獲得任何獎勵。"
+					rewards.length ? rewards.join(", ") : "まだ報酬は獲得されていません。"
 				),
 			}
 		);
@@ -183,17 +185,17 @@ async function updateCheckin(userId, currentDate) {
 	if (isReset) {
 		updateCheckin.run(newStreak, currentDate, JSON.stringify(rewards), userId);
 		embed.setDescription(
-			`🔄 ${row.username}，您已有5天未進行簽到，累計簽到次數已重置為1。`
+			`🔄 ${row.username} さん、5日間チェックインがされていなかったため、累計チェックイン数は「1」にリセットされました。`
 		);
 		embed.addFields(
 			{
-				name: "當前累計簽到天數",
-				value: `${inlineCode(newStreak.toString())} 天`,
+				name: "累計チェックイン日数",
+				value: `${inlineCode(newStreak.toString())} 日`,
 			},
 			{
-				name: "獎勵",
+				name: "報酬",
 				value: codeBlock(
-					rewards.length ? rewards.join(", ") : "尚未獲得任何獎勵。"
+					rewards.length ? rewards.join(", ") : "まだ報酬は獲得されていません。"
 				),
 			}
 		);
@@ -204,10 +206,10 @@ async function updateCheckin(userId, currentDate) {
 	}
 
 	// If streak continues
-	embed.setDescription(`✅ ${row.username}，你已成功簽到！`);
+	embed.setDescription(`✅ ${row.username} さん、チェックイン成功しました！`);
 	embed.addFields({
-		name: "當前累計簽到天數",
-		value: `${inlineCode(newStreak.toString())} 天`,
+		name: "累計チェックイン日数",
+		value: `${inlineCode(newStreak.toString())} 日`,
 	});
 
 	// After calculating newStreak
@@ -234,7 +236,7 @@ async function updateCheckin(userId, currentDate) {
 
 			if (!success)
 				return {
-					content: `❌ 無法為 ${row.username} 更新獎勵。請稍後再試。`,
+					content: `❌ ${row.username} さんの報酬を更新できませんでした。しばらくしてからもう一度お試しください。`,
 				};
 		}
 		// Update max_streak
@@ -245,9 +247,9 @@ async function updateCheckin(userId, currentDate) {
 	}
 
 	embed.addFields({
-		name: "獎勵",
+		name: "報酬",
 		value: codeBlock(
-			rewards.length ? rewards.join(", ") : "尚未獲得任何獎勵。"
+			rewards.length ? rewards.join(", ") : "まだ報酬は獲得されていません。"
 		),
 	});
 
