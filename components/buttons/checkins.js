@@ -46,7 +46,7 @@ module.exports = {
 
 		// --- Server-wide cooldown check ---
 		const SERVER_COOLDOWN_SECONDS = 5; // Set your desired cooldown (in seconds)
-		const lastUsed = serverCooldowns.get(serverId) || 0;
+		const lastUsed = serverCooldowns.get(process.env.GUILD_ID) || 0;
 		if (now - lastUsed < SERVER_COOLDOWN_SECONDS * 1000) {
 			const waitTime = Math.ceil(
 				(SERVER_COOLDOWN_SECONDS * 1000 - (now - lastUsed)) / 1000
@@ -55,7 +55,7 @@ module.exports = {
 				content: `⏳ アクセス数が多すぎるため、ボタンはクールダウン中です。${waitTime} 秒間待ってください`,
 			});
 		}
-		serverCooldowns.set(serverId, now);
+		serverCooldowns.set(process.env.GUILD_ID, now);
 
 		const interactionReply = isNewUser(userId)
 			? await createCheckin(userId, username, currentDate)
