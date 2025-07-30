@@ -248,13 +248,14 @@ async function updateCheckin(userId, currentDate) {
 				return {
 					content: `❌ ${row.username} さんの報酬を更新できませんでした。しばらくしてからもう一度お試しください。`,
 				};
-			if (response && success) larkSuccess = true;
+			if (response && success) {
+				larkSuccess = true;
+				db.prepare(`UPDATE checkins SET max_streak = ? WHERE user_id = ?`).run(
+					newStreak,
+					userId
+				);
+			}
 		}
-		// Update max_streak
-		db.prepare(`UPDATE checkins SET max_streak = ? WHERE user_id = ?`).run(
-			newStreak,
-			userId
-		);
 	}
 
 	embed.addFields({
