@@ -13,8 +13,6 @@ const db = new Database(path.join(__dirname, "../../db/checkins.sqlite"), {
 	verbose: console.log,
 });
 
-const serverCooldowns = new Map(); // key: serverId, value: timestamp
-
 db.exec(`
   CREATE TABLE IF NOT EXISTS checkins (
     user_id TEXT PRIMARY KEY NOT NULL,
@@ -43,19 +41,6 @@ module.exports = {
 		const currentDate = now.toLocaleDateString("sv-SE", {
 			timeZone: "Asia/Tokyo", // UTC+9
 		});
-
-		// --- Server-wide cooldown check ---
-		const SERVER_COOLDOWN_SECONDS = 10; // Set your desired cooldown (in seconds)
-		const lastUsed = serverCooldowns.get(process.env.GUILD_ID) || 0;
-		if (now - lastUsed < SERVER_COOLDOWN_SECONDS * 1000) {
-			const waitTime = Math.ceil(
-				(SERVER_COOLDOWN_SECONDS * 1000 - (now - lastUsed)) / 1000
-			);
-			return await interaction.editReply({
-				content: `⏳ アクセス数が多すぎるため、ボタンはクールダウン中です。${waitTime} 秒間待ってください`,
-			});
-		}
-		serverCooldowns.set(process.env.GUILD_ID, now);
 
 		const interactionReply = isNewUser(userId)
 			? await createCheckin(userId, username, currentDate)
