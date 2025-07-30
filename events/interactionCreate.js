@@ -131,7 +131,7 @@ async function checkCooldown(interaction, element) {
 
 			return {
 				cooldown: true,
-				message: `Please wait, you are on a cooldown for \`${element.data.name}\`. You can use it again <t:${expiredTimestamp}:R>.`,
+				message: `⏳此伺服器上的按鈕正在冷卻中。請再等<t:${expiredTimestamp}:R>`,
 			};
 		}
 	}
