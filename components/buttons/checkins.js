@@ -45,14 +45,14 @@ module.exports = {
 		});
 
 		// --- Server-wide cooldown check ---
-		const SERVER_COOLDOWN_SECONDS = 10; // Set your desired cooldown (in seconds)
+		const SERVER_COOLDOWN_SECONDS = 5; // Set your desired cooldown (in seconds)
 		const lastUsed = serverCooldowns.get(serverId) || 0;
 		if (now - lastUsed < SERVER_COOLDOWN_SECONDS * 1000) {
 			const waitTime = Math.ceil(
 				(SERVER_COOLDOWN_SECONDS * 1000 - (now - lastUsed)) / 1000
 			);
 			return await interaction.editReply({
-				content: `⏳ The wishlist command is on cooldown for this server. Please wait ${waitTime} more seconds.`,
+				content: `⏳ アクセス数が多すぎるため、ボタンはクールダウン中です。${waitTime} 秒間待ってください`,
 			});
 		}
 		serverCooldowns.set(serverId, now);
