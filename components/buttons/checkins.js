@@ -238,6 +238,7 @@ async function updateCheckin(userId, currentDate) {
 
 	// After calculating newStreak
 	const shouldGiveReward = newStreak > row.max_streak;
+	let larkSuccess = false;
 
 	if (shouldGiveReward) {
 		const response = await lark.listRecords(
@@ -262,6 +263,7 @@ async function updateCheckin(userId, currentDate) {
 				return {
 					content: `❌ ${row.username} さんの報酬を更新できませんでした。しばらくしてからもう一度お試しください。`,
 				};
+			if (response && success) larkSuccess = true;
 		}
 		// Update max_streak
 		db.prepare(`UPDATE checkins SET max_streak = ? WHERE user_id = ?`).run(
@@ -277,9 +279,14 @@ async function updateCheckin(userId, currentDate) {
 		),
 	});
 
-	updateCheckin.run(newStreak, currentDate, JSON.stringify(rewards), userId);
-
-	return {
-		embeds: [embed],
-	};
+	if (larkSuccess) {
+		updateCheckin.run(newStreak, currentDate, JSON.stringify(rewards), userId);
+		return {
+			embeds: [embed],
+		};
+	} else {
+		return {
+			content: `❌ ${row.username} さんの報酬を更新できませんでした。しばらくしてからもう一度お試しください。`,
+		};
+	}
 }
