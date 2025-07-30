@@ -131,7 +131,7 @@ async function checkCooldown(interaction, element) {
 
 			return {
 				cooldown: true,
-				message: `Please wait, you are on a cooldown for \`${element.data.name}\`. You can use it again <t:${expiredTimestamp}:R>.`,
+				message: `\`${element.data.name}\` コールドダウン中です。 <t:${expiredTimestamp}:R>に再び使用できます。`,
 			};
 		}
 	}
