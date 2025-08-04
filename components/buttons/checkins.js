@@ -246,16 +246,18 @@ async function updateCheckin(userId, currentDate) {
 }
 
 function getLocalReward(day) {
+	const dayStr = String(day); // Ensure day is a string
 	const row = codesDB
-		.prepare("SELECT * FROM rewards WHERE day = ? AND discord_id IS NULL")
-		.get(day);
-	return row ? row.reward : null;
+		.prepare("SELECT reward_item FROM codes WHERE day = ? AND discord_id = ''")
+		.get(dayStr);
+	return row ? row.reward_item : null;
 }
 
 function updateLocalReward(day, userId) {
+	const dayStr = String(day); // Ensure day is a string
 	codesDB
 		.prepare(
-			"UPDATE rewards SET discord_id = ? WHERE day = ? AND discord_id IS NULL"
+			"UPDATE codes SET discord_id = ? WHERE day = ? AND discord_id = ''"
 		)
-		.run(userId, day);
+		.run(userId, dayStr);
 }
