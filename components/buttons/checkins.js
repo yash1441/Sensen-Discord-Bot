@@ -175,7 +175,8 @@ async function updateCheckin(userId, currentDate) {
 
 	// Calculate streak
 	const days = daysBetween(lastCheckin, now);
-	const newStreak = days <= 5 ? row.streak + 1 : 1;
+	// const newStreak = days <= 5 ? row.streak + 1 : 1;
+	const newStreak = row.streak + 1;
 	const isReset = newStreak === 1;
 
 	const updateCheckin = db.prepare(
