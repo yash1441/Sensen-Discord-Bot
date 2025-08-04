@@ -4,16 +4,22 @@ const {
 	inlineCode,
 	codeBlock,
 } = require("discord.js");
-const lark = require("../../utils/lark");
 const Database = require("better-sqlite3");
 const path = require("path");
 require("dotenv").config();
 
-const db = new Database(path.join(__dirname, "../../db/checkins.sqlite"), {
+const checkinsDB = new Database(
+	path.join(__dirname, "../../db/checkins.sqlite"),
+	{
+		verbose: console.log,
+	}
+);
+
+const codesDB = new Database(path.join(__dirname, "../../db/codes.sqlite"), {
 	verbose: console.log,
 });
 
-db.exec(`
+checkinsDB.exec(`
   CREATE TABLE IF NOT EXISTS checkins (
     user_id TEXT PRIMARY KEY NOT NULL,
     username TEXT NOT NULL,
@@ -52,7 +58,7 @@ module.exports = {
 
 function isNewUser(userId) {
 	// Check if the user already has a check-in record
-	const existingCheckin = db
+	const existingCheckin = checkinsDB
 		.prepare("SELECT * FROM checkins WHERE user_id = ?")
 		.get(userId);
 
@@ -81,33 +87,14 @@ async function createCheckin(userId, username, currentDate) {
 		})
 		.setTimestamp();
 
-	const response = await lark.listRecords(
-		process.env.DAILY_REWARDS_BASE,
-		process.env.DAILY_REWARDS_TABLE,
-		{
-			filter: `AND(CurrentValue.[Discord ID] = "", CurrentValue.[Day] = ${streak})`,
-		}
-	);
-
 	let rewards = [];
-	if (response && response.total > 0) {
-		rewards = [response.items[0].fields.Reward];
-
-		const success = await lark.updateRecord(
-			process.env.DAILY_REWARDS_BASE,
-			process.env.DAILY_REWARDS_TABLE,
-			response.items[0].record_id,
-			{ fields: { "Discord ID": userId } }
-		);
-
-		if (!success)
-			return {
-				content: `❌ ${username} さんの報酬を更新できませんでした。しばらくしてからもう一度お試しください。`,
-			};
-
+	const reward = getLocalReward(streak);
+	if (reward) {
+		rewards = [reward];
+		updateLocalReward(streak, userId);
 		embed.addFields({
 			name: "報酬",
-			value: codeBlock(rewards.join(", ") || "まだ報酬は獲得されていません。"),
+			value: codeBlock(rewards.join(", ")),
 		});
 	} else {
 		embed.addFields({
@@ -116,12 +103,14 @@ async function createCheckin(userId, username, currentDate) {
 		});
 	}
 
-	db.prepare(
-		`
-		INSERT INTO checkins (user_id, username, streak, last_checkin, rewards)
-		VALUES (?, ?, ?, ?, ?)
-	`
-	).run(userId, username, streak, currentDate, JSON.stringify(rewards));
+	checkinsDB
+		.prepare(
+			`
+        INSERT INTO checkins (user_id, username, streak, last_checkin, rewards)
+        VALUES (?, ?, ?, ?, ?)
+    `
+		)
+		.run(userId, username, streak, currentDate, JSON.stringify(rewards));
 
 	return {
 		embeds: [embed],
@@ -134,7 +123,7 @@ async function updateCheckin(userId, currentDate) {
 		.setTitle("ログインキャンペーン")
 		.setTimestamp();
 
-	const row = db
+	const row = checkinsDB
 		.prepare("SELECT * FROM checkins WHERE user_id = ?")
 		.get(userId);
 
@@ -179,7 +168,7 @@ async function updateCheckin(userId, currentDate) {
 	const newStreak = row.streak + 1;
 	const isReset = newStreak === 1;
 
-	const updateCheckin = db.prepare(
+	const updateCheckin = checkinsDB.prepare(
 		`UPDATE checkins
 		SET streak = ?, last_checkin = ?, rewards = ?
 		WHERE user_id = ?`
@@ -188,10 +177,9 @@ async function updateCheckin(userId, currentDate) {
 	if (isReset) {
 		// Update max_streak to previous streak if it's higher
 		if (row.streak > row.max_streak) {
-			db.prepare(`UPDATE checkins SET max_streak = ? WHERE user_id = ?`).run(
-				row.streak,
-				userId
-			);
+			checkinsDB
+				.prepare(`UPDATE checkins SET max_streak = ? WHERE user_id = ?`)
+				.run(row.streak, userId);
 		}
 		updateCheckin.run(newStreak, currentDate, JSON.stringify(rewards), userId);
 		embed.setDescription(
@@ -224,38 +212,17 @@ async function updateCheckin(userId, currentDate) {
 
 	// After calculating newStreak
 	const shouldGiveReward = newStreak > row.max_streak;
-	let larkSuccess = false;
+	let rewardGiven = false;
 
 	if (shouldGiveReward) {
-		const response = await lark.listRecords(
-			process.env.DAILY_REWARDS_BASE,
-			process.env.DAILY_REWARDS_TABLE,
-			{
-				filter: `AND(CurrentValue.[Discord ID] = "", CurrentValue.[Day] = ${newStreak})`,
-			}
-		);
-
-		if (response && response.total > 0) {
-			rewards.push(response.items[0].fields.Reward);
-
-			const success = await lark.updateRecord(
-				process.env.DAILY_REWARDS_BASE,
-				process.env.DAILY_REWARDS_TABLE,
-				response.items[0].record_id,
-				{ fields: { "Discord ID": userId } }
-			);
-
-			if (!success)
-				return {
-					content: `❌ ${row.username} さんの報酬を更新できませんでした。しばらくしてからもう一度お試しください。`,
-				};
-			if (response && success) {
-				larkSuccess = true;
-				db.prepare(`UPDATE checkins SET max_streak = ? WHERE user_id = ?`).run(
-					newStreak,
-					userId
-				);
-			}
+		const reward = getLocalReward(newStreak);
+		if (reward) {
+			rewards.push(reward);
+			updateLocalReward(newStreak, userId);
+			checkinsDB
+				.prepare(`UPDATE checkins SET max_streak = ? WHERE user_id = ?`)
+				.run(newStreak, userId);
+			rewardGiven = true;
 		}
 	}
 
@@ -266,14 +233,29 @@ async function updateCheckin(userId, currentDate) {
 		),
 	});
 
-	if (larkSuccess) {
-		updateCheckin.run(newStreak, currentDate, JSON.stringify(rewards), userId);
-		return {
-			embeds: [embed],
-		};
-	} else {
+	if (shouldGiveReward && !rewardGiven) {
 		return {
 			content: `❌ ${row.username} さんの報酬を更新できませんでした。しばらくしてからもう一度お試しください。`,
 		};
 	}
+
+	updateCheckin.run(newStreak, currentDate, JSON.stringify(rewards), userId);
+	return {
+		embeds: [embed],
+	};
+}
+
+function getLocalReward(day) {
+	const row = codesDB
+		.prepare("SELECT * FROM rewards WHERE day = ? AND discord_id IS NULL")
+		.get(day);
+	return row ? row.reward : null;
+}
+
+function updateLocalReward(day, userId) {
+	codesDB
+		.prepare(
+			"UPDATE rewards SET discord_id = ? WHERE day = ? AND discord_id IS NULL"
+		)
+		.run(userId, day);
 }
