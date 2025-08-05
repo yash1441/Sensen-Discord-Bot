@@ -250,9 +250,9 @@ async function updateCheckin(userId, currentDate) {
 function getLocalReward(day) {
 	const dayStr = String(day); // Ensure day is a string
 	const row = codesDB
-		.prepare("SELECT reward_item FROM codes WHERE day = ? AND discord_id = ''")
+		.prepare("SELECT reward FROM codes WHERE day = ? AND discord_id = ''")
 		.get(dayStr);
-	return row ? row.reward_item : null;
+	return row ? row.reward : null;
 }
 
 function updateLocalReward(day, userId) {
