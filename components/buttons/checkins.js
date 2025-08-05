@@ -156,8 +156,6 @@ async function updateCheckin(userId, currentDate) {
 		rewards = [];
 	}
 
-	console.log(`Parsed rewards for user ${userId}: ${JSON.stringify(rewards)}`);
-
 	if (lastDate === currentDate) {
 		embed.setDescription(
 			`⏳ ${row.username} さん、本日はすでにチェックイン済みです。明日またお試しください。`
@@ -240,9 +238,6 @@ async function updateCheckin(userId, currentDate) {
 	let rewardGiven = false;
 
 	if (shouldGiveReward) {
-		console.log(
-			`User ${userId} has a new streak of ${newStreak}. Checking for rewards.`
-		);
 		const reward = getLocalReward(newStreak);
 		if (reward) {
 			rewards.push(reward);
