@@ -191,10 +191,12 @@ async function updateCheckin(userId, currentDate) {
 	);
 
 	if (isReset) {
+		// Update max_streak to previous streak if it's higher
+
 		console.log(
 			`User ${userId} has not checked in for more than 5 days. Resetting streak to 1.`
 		);
-		// Update max_streak to previous streak if it's higher
+
 		if (row.streak > row.max_streak) {
 			checkinsDB
 				.prepare(`UPDATE checkins SET max_streak = ? WHERE user_id = ?`)
