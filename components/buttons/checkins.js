@@ -70,10 +70,6 @@ function daysBetween(date1, date2) {
 	const diffTime = d2 - d1;
 	const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
-	console.log(
-		`Days between ${d1.toISOString()} and ${d2.toISOString()}: ${diffDays}`
-	);
-	// Return the difference in days
 	return diffDays;
 }
 
