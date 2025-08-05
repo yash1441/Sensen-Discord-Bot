@@ -234,8 +234,10 @@ async function updateCheckin(userId, currentDate) {
 	});
 
 	if (shouldGiveReward && !rewardGiven) {
+		// Just return the normal embed (no error message)
+		updateCheckin.run(newStreak, currentDate, JSON.stringify(rewards), userId);
 		return {
-			content: `❌ ${row.username} さんの報酬を更新できませんでした。しばらくしてからもう一度お試しください。`,
+			embeds: [embed],
 		};
 	}
 
