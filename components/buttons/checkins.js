@@ -9,15 +9,9 @@ const path = require("path");
 require("dotenv").config();
 
 const checkinsDB = new Database(
-	path.join(__dirname, "../../db/checkins.sqlite"),
-	{
-		verbose: console.log,
-	}
+	path.join(__dirname, "../../db/checkins.sqlite")
 );
-
-const codesDB = new Database(path.join(__dirname, "../../db/codes.sqlite"), {
-	verbose: console.log,
-});
+const codesDB = new Database(path.join(__dirname, "../../db/codes.sqlite"));
 
 checkinsDB.exec(`
   CREATE TABLE IF NOT EXISTS checkins (
@@ -62,6 +56,10 @@ function isNewUser(userId) {
 		.prepare("SELECT * FROM checkins WHERE user_id = ?")
 		.get(userId);
 
+	console.log(
+		`Checking if user ${userId} is new: ${!existingCheckin ? "Yes" : "No"}`
+	);
+	// If no record exists, the user is new
 	return !existingCheckin;
 }
 
@@ -71,6 +69,11 @@ function daysBetween(date1, date2) {
 
 	const diffTime = d2 - d1;
 	const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+	console.log(
+		`Days between ${d1.toISOString()} and ${d2.toISOString()}: ${diffDays}`
+	);
+	// Return the difference in days
 	return diffDays;
 }
 
@@ -89,14 +92,25 @@ async function createCheckin(userId, username, currentDate) {
 
 	let rewards = [];
 	const reward = getLocalReward(streak);
+
+	console.log(
+		`Creating check-in for user ${userId} with streak ${streak} on ${currentDate}`
+	);
+
 	if (reward) {
 		rewards = [reward];
+		console.log(
+			`Reward for streak ${streak} found: ${reward}. Updating local reward.`
+		);
 		updateLocalReward(streak, userId);
 		embed.addFields({
 			name: "報酬",
 			value: codeBlock(rewards.join(", ")),
 		});
 	} else {
+		console.log(
+			`No reward found for streak ${streak}. Adding default message.`
+		);
 		embed.addFields({
 			name: "報酬",
 			value: codeBlock("まだ報酬は獲得されていません。"),
@@ -105,10 +119,8 @@ async function createCheckin(userId, username, currentDate) {
 
 	checkinsDB
 		.prepare(
-			`
-        INSERT INTO checkins (user_id, username, streak, last_checkin, rewards)
-        VALUES (?, ?, ?, ?, ?)
-    `
+			`INSERT INTO checkins (user_id, username, streak, last_checkin, rewards)
+        VALUES (?, ?, ?, ?, ?)`
 		)
 		.run(userId, username, streak, currentDate, JSON.stringify(rewards));
 
@@ -132,6 +144,10 @@ async function updateCheckin(userId, currentDate) {
 
 	const lastDate = row.last_checkin;
 
+	console.log(
+		`Updating check-in for user ${userId} with last check-in on ${lastDate} and current date ${currentDate}`
+	);
+
 	// Parse rewards safely
 	let rewards = [];
 	try {
@@ -139,6 +155,8 @@ async function updateCheckin(userId, currentDate) {
 	} catch {
 		rewards = [];
 	}
+
+	console.log(`Parsed rewards for user ${userId}: ${JSON.stringify(rewards)}`);
 
 	if (lastDate === currentDate) {
 		embed.setDescription(
@@ -155,6 +173,10 @@ async function updateCheckin(userId, currentDate) {
 					rewards.length ? rewards.join(", ") : "まだ報酬は獲得されていません。"
 				),
 			}
+		);
+
+		console.log(
+			`User ${userId} has already checked in today. Returning existing streak and rewards.`
 		);
 
 		return {
@@ -175,6 +197,9 @@ async function updateCheckin(userId, currentDate) {
 	);
 
 	if (isReset) {
+		console.log(
+			`User ${userId} has not checked in for more than 5 days. Resetting streak to 1.`
+		);
 		// Update max_streak to previous streak if it's higher
 		if (row.streak > row.max_streak) {
 			checkinsDB
@@ -215,6 +240,9 @@ async function updateCheckin(userId, currentDate) {
 	let rewardGiven = false;
 
 	if (shouldGiveReward) {
+		console.log(
+			`User ${userId} has a new streak of ${newStreak}. Checking for rewards.`
+		);
 		const reward = getLocalReward(newStreak);
 		if (reward) {
 			rewards.push(reward);
@@ -223,6 +251,9 @@ async function updateCheckin(userId, currentDate) {
 				.prepare(`UPDATE checkins SET max_streak = ? WHERE user_id = ?`)
 				.run(newStreak, userId);
 			rewardGiven = true;
+			console.log(
+				`Reward for new streak ${newStreak} found: ${reward}. Updating local reward.`
+			);
 		}
 	}
 
@@ -234,6 +265,9 @@ async function updateCheckin(userId, currentDate) {
 	});
 
 	if (shouldGiveReward && !rewardGiven) {
+		console.log(
+			`No reward found for new streak ${newStreak}. Adding default message.`
+		);
 		// Just return the normal embed (no error message)
 		updateCheckin.run(newStreak, currentDate, JSON.stringify(rewards), userId);
 		return {
@@ -252,6 +286,8 @@ function getLocalReward(day) {
 	const row = codesDB
 		.prepare("SELECT reward FROM codes WHERE day = ? AND discord_id = ''")
 		.get(dayStr);
+
+	console.log(`Fetching local reward for day ${dayStr}:`, row);
 	return row ? row.reward : null;
 }
 
