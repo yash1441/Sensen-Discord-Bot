@@ -25,7 +25,7 @@ checkinsDB.exec(`
 `);
 
 module.exports = {
-	cooldown: 5,
+	cooldown: 3,
 	data: {
 		name: "checkins",
 	},
